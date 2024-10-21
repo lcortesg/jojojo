@@ -15,10 +15,11 @@
 #define THRESHOLD 50    // Switch threshold.
 #define TURN_TIME 300   // Time (in mili-seconds) needed for a 180 degree turn.
 #define POWER_DIVIDER 1       // POWER_MAX divider.
-#define STEERING_DIVIDER 1 // POWER_MAX steering divider.
+#define STEERING_DIVIDER 2 // POWER_MAX steering divider.
 #define POWER_MAX 127   // Maximum power supplied through the motor driver.
 #define PIN_LIGHT 11
 #define PIN_JOJOJO 12
+#define PIN_ACTIVE 10
 double POWER = 0;
 double DIRECTION = 0;
 bool JOJOJO = false;
@@ -47,6 +48,8 @@ double THROTTLE_VALUE = 0;
 double SWITCH_VALUE = 0;    
 double BUTTON_VALUE = 0;    
 
+char MODE = "STOP";
+
 uint16_t rc_values[RC_NUM_CHANNELS];
 uint32_t rc_start[RC_NUM_CHANNELS];
 volatile uint16_t rc_shared[RC_NUM_CHANNELS];
@@ -62,6 +65,8 @@ void setup(){
     digitalWrite(PIN_LIGHT, HIGH);
     pinMode(PIN_JOJOJO, OUTPUT);
     digitalWrite(PIN_JOJOJO, HIGH);
+    pinMode(PIN_ACTIVE, OUTPUT);
+    digitalWrite(PIN_ACTIVE, LOW);
     enableInterrupt(STEERING_INPUT, calc_ch1, CHANGE);
     enableInterrupt(THROTTLE_INPUT, calc_ch2, CHANGE);
     enableInterrupt(SWITCH_INPUT, calc_ch3, CHANGE);
@@ -70,9 +75,9 @@ void setup(){
     SabertoothTXPinSerial.begin(9600);
     ST.autobaud();
 
-    //pacman(); // This is optional, obviously.
+    pacman(); // This is optional, obviously.
     //elephant(); // This is optional, obviously. alternative song.
-    elephant_short(); // This is optional, obviously. alternative song.
+    //elephant_short(); // This is optional, obviously. alternative song.
 
 
     #if DEBUG > NONE
@@ -105,9 +110,21 @@ void loop(){
         Serial.print("POWER:"); Serial.println(POWER); Serial.print("\t");
         Serial.print("DIRECTION:"); Serial.println(DIRECTION);
     #endif
+    /*
+    if (SWITCH_VALUE < 1000 + THRESHOLD){
+      MODE = "STOP";
+    }
+    else if ((SWITCH_VALUE > 1500 - THRESHOLD) && (SWITCH_VALUE < 1500 + THRESHOLD)){
+      MODE = "FREE";
+    }
+    else if ((SWITCH_VALUE > 2000 - THRESHOLD) && (SWITCH_VALUE < 2000 + THRESHOLD))){
+      MODE = "LIGHTS";
+    }
+    */
+    if (SWITCH_VALUE > 1000 + THRESHOLD) { //(((SWITCH_VALUE > 1500 - THRESHOLD) && (SWITCH_VALUE < 1500 + THRESHOLD)) || ((SWITCH_VALUE > 2000 - THRESHOLD) && (SWITCH_VALUE < 2000 + THRESHOLD))){
 
-    if (((SWITCH_VALUE > 1500 - THRESHOLD) && (SWITCH_VALUE < 1500 + THRESHOLD)) || ((SWITCH_VALUE > 2000 - THRESHOLD) && (SWITCH_VALUE < 2000 + THRESHOLD))){
-      
+        digitalWrite(PIN_ACTIVE, HIGH);
+
         if ((SWITCH_VALUE > 2000 - THRESHOLD) && (SWITCH_VALUE < 2000 + THRESHOLD)){
 
             if (ENABLE > NONE) {
@@ -189,6 +206,8 @@ void loop(){
 
     else {
 
+        digitalWrite(PIN_ACTIVE, LOW);
+
         #if ENABLE > NONE
             digitalWrite(PIN_JOJOJO, HIGH);
             digitalWrite(PIN_LIGHT, HIGH);
@@ -201,6 +220,5 @@ void loop(){
             Serial.println("STOP!");
         #endif
 
-        //while(true);
     }
 }
